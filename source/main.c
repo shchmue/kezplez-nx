@@ -1,6 +1,7 @@
 //library includes
 #include <string.h>
 #include <stdio.h>
+#include <dirent.h>
 #include <switch.h>
 #include <stdbool.h>
 #include <mbedtls/sha256.h>
@@ -180,6 +181,13 @@ char KEYBLOB_SEEDS[0x20][0x10] = {
 };
 
 char keyfilepath[28] = "/switch/kezplez-nx/keys.txt\0";
+char hekate_backup_path[256] = "";
+char hekate_fusedump_path[256] = "";
+char hekate_tsecdump_path[256] = "";
+char hekate_boot0_path[256] = "";
+char hekate_package2_decrypted_path[256] = "";
+char hekate_package2_ini1_path[256] = "";
+char hekate_package2_kernel_path[256] = "";
 
 int appstate, progress, step_result, fail_result;
 FILE* keyfile;
@@ -547,6 +555,64 @@ void update_keyfile(int stage, nca_keyset_t* keyset)
 	fclose(keyfile);
 }
 
+void find_hekate_dumps()
+{
+	DIR* dir;
+    struct dirent* ent;
+
+    char dirname[256] = "/backup";
+    dir = opendir(dirname);
+	while ((ent = readdir(dir)))
+	{
+		if (strcmp(ent->d_name, "dumps") == 0) // /backup/dumps pre-hekate 4.0
+		{
+			strcpy(hekate_backup_path, dirname);
+			strcat(dirname, "/dumps");
+			break;
+		}
+		else if (strlen(ent->d_name) == 8) // 8-char eMMC serial post-hekate 4.0
+		{
+			strcat(dirname, "/");
+			strcat(dirname, ent->d_name);
+			strcpy(hekate_backup_path, dirname);
+			strcat(dirname, "/dumps");
+			break;
+		}
+	}
+	closedir(dir);
+
+    dir = opendir(dirname);
+    while ((ent = readdir(dir)))
+	{
+		if (strncmp(ent->d_name, "tsec", 4) == 0)
+		{
+			strcpy(hekate_tsecdump_path, dirname);
+            strcat(hekate_tsecdump_path, "/");
+			strcat(hekate_tsecdump_path, ent->d_name);
+			break;
+		}
+		else if (strncmp(ent->d_name, "fuse", 4) == 0)
+		{
+			strcpy(hekate_fusedump_path, dirname);
+			strcat(hekate_fusedump_path, "/");
+			strcat(hekate_fusedump_path, ent->d_name);
+		}
+	}
+	closedir(dir);
+
+	strcpy(hekate_boot0_path, hekate_backup_path);
+	strcat(hekate_boot0_path, "/BOOT0");
+
+	strcpy(hekate_package2_decrypted_path, hekate_backup_path);
+	strcat(hekate_package2_decrypted_path, "/pkg2/pkg2_decr.bin");
+
+	strcpy(hekate_package2_ini1_path, hekate_backup_path);
+	strcat(hekate_package2_ini1_path, "/pkg2/ini1.bin");
+
+	strcpy(hekate_package2_kernel_path, hekate_backup_path);
+	strcat(hekate_package2_kernel_path, "/pkg2/kernel.bin");
+}
+
 void get_tsec_sbk()
 {
 	safe_open_key_file();
@@ -555,8 +621,8 @@ void get_tsec_sbk()
 	char tsec_key[0x10];
 	char* hexkey;
 	
-	FILE* fusefile = fopen("/Backup/Dumps/fuses.bin", "rb");
-	FILE* tsecfile = fopen("/Backup/Dumps/tsec_key.bin", "rb");
+	FILE* fusefile = fopen(hekate_fusedump_path, "rb");
+	FILE* tsecfile = fopen(hekate_tsecdump_path, "rb");
 	
 	fseek(fusefile, 0, SEEK_SET);
 	fseek(fusefile, 0xA4, SEEK_SET);
@@ -639,7 +705,7 @@ void dump_boot0()
 {
 	step_completed = false;
 	
-	FILE* hekate_boot0_f = fopen("/Backup/BOOT0", "rb");
+	FILE* hekate_boot0_f = fopen(hekate_boot0_path, "rb");
 	if (hekate_boot0_f != NULL) { BOOT0_FH = true; }
 	else { BOOT0_FH = false; }
 	
@@ -673,9 +739,9 @@ void dump_bcpkg_21()
 {
 	step_completed = false;
 	
-	FILE* hekate_pkg2_f = fopen("/Backup/pkg2/pkg2_decr.bin", "rb");
-	FILE* hekate_ini1_f = fopen("/Backup/pkg2/ini1.bin", "rb");
-	FILE* hekate_kern_f = fopen("/Backup/pkg2/kernel.bin", "rb");
+	FILE* hekate_pkg2_f = fopen(hekate_package2_decrypted_path, "rb");
+	FILE* hekate_ini1_f = fopen(hekate_package2_ini1_path, "rb");
+	FILE* hekate_kern_f = fopen(hekate_package2_kernel_path, "rb");
 	
 	if (hekate_pkg2_f != NULL && hekate_ini1_f != NULL && hekate_kern_f != NULL)
 	{
@@ -1166,6 +1232,9 @@ int main(int argc, char** argv)
 	progress = 0;
 	fail_result = 0;
 	
+	// determine hekate backup folder structure and init paths
+	find_hekate_dumps();
+
 	//hactool init
 	get_tsec_sbk();
 	hactool_init();
