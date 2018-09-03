@@ -587,7 +587,7 @@ void find_hekate_dumps()
 		if (strncmp(ent->d_name, "tsec", 4) == 0)
 		{
 			strcpy(hekate_tsecdump_path, dirname);
-            strcat(hekate_tsecdump_path, "/");
+			strcat(hekate_tsecdump_path, "/");
 			strcat(hekate_tsecdump_path, ent->d_name);
 			break;
 		}
