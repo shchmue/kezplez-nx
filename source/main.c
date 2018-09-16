@@ -243,7 +243,7 @@ char* blz_decompress(FILE* has_compdata, u32 compdata_off, u32 compdata_size, in
 	
 	//sprintf(debugbuf, "creating decompression buffer...\n");
 	//bedug_print(debugbuf);
-	int decompressed_size = compressed_size + uncompressed_addl_size;
+	int decompressed_size = compdata_size + uncompressed_addl_size;
 	*decompdata_size = decompressed_size;
 	char* decompressed = malloc(decompressed_size);
 	if (compdata_size != compressed_size)
@@ -255,7 +255,7 @@ char* blz_decompress(FILE* has_compdata, u32 compdata_off, u32 compdata_size, in
 		memcpy(decompressed, compressed, compressed_size);
 	}
 	
-	int index = compressed_size - init_index;
+	int index = compdata_size - init_index;
 	int outindex = decompressed_size;
 	//sprintf(debugbuf, "decompressing...\n");
 	//bedug_print(debugbuf);
