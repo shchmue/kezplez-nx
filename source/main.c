@@ -570,7 +570,7 @@ void find_hekate_dumps()
 			strcat(dirname, "/dumps");
 			break;
 		}
-		else if (strtol(ent->d_name, NULL, 16) > 0) // /backup/<eMMC serial> post-hekate 4.0
+		else if (strtoul(ent->d_name, NULL, 16) > 0) // /backup/<eMMC serial> post-hekate 4.0
 		{
 			strcat(dirname, "/");
 			strcat(dirname, ent->d_name);
