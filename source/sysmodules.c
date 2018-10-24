@@ -46,7 +46,7 @@ void get_eticket_rsa_kek(application_ctx* appstate)
     pmdmntExit();
     printf("Read successful! Detached debug handle, exited debug monitor.\n");
     
-    if ((strcmp(eticket_rsa_kek_source, nokey) == 0) || (strcmp(eticket_rsa_kek_source, nokey) == 0)) {
+    if ((strcmp(eticket_rsa_kek_source, nokey) == 0) || (strcmp(eticket_rsa_kekek_source, nokey) == 0)) {
         debug_log("Failed to find both needed keys in es process. Aborting.\n");
         return;
     }
